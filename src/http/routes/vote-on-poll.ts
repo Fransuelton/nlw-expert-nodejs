@@ -1,5 +1,5 @@
 import { z } from "zod";
-import {randomUUID} from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { prisma } from "../../lib/prisma";
 import { FastifyInstance } from "fastify";
 
@@ -16,8 +16,19 @@ export async function voteOnPoll(app: FastifyInstance) {
     const { pollId } = voteOnPollParams.parse(request.params);
     const { pollOptionId } = voteOnPollBody.parse(request.body);
 
-    const sessionId = randomUUID();
+    let { sessionId } = request.cookies;
 
-    return reply.status(201).send();
+    if (!sessionId) {
+      sessionId = randomUUID();
+
+      reply.setCookie("sessionId", sessionId, {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+        signed: true,
+        httpOnly: true,
+      });
+    }
+
+    return reply.status(201).send({sessionId});
   });
 }
